@@ -1,0 +1,1633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>For You Only</title>
+
+<!-- Firebase SDK (compat mode) -->
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Great+Vibes&family=Dancing+Script:wght@400;500;600;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --primary: #4fc3f7;
+  --primary-dark: #01579b;
+  --accent: #81d4fa;
+  --shine: #b3e5fc;
+  --deep: #0a1929;
+}
+html, body {
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: #000; color: #fff;
+  font-family: 'Cormorant Garamond', serif;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ========== SCREENS ========== */
+.screen {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 1.5s ease-in-out;
+  text-align: center; overflow: hidden;
+  background: #000;
+}
+.screen.active { opacity: 1; pointer-events: auto; z-index: 10; }
+
+.bg-video {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  opacity: 0.85;
+  pointer-events: none;
+}
+.vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.8) 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+.vignette-soft {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0) 0%, rgba(0,0,0,0.5) 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ========== LOGIN ========== */
+.login-panel {
+  position: relative; z-index: 5;
+  background: rgba(5, 15, 30, 0.55);
+  backdrop-filter: blur(25px) saturate(1.4);
+  -webkit-backdrop-filter: blur(25px) saturate(1.4);
+  padding: 60px 55px;
+  border-radius: 6px;
+  border: 1px solid rgba(79, 195, 247, 0.35);
+  box-shadow:
+    0 30px 80px rgba(0,0,0,0.9),
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    0 0 60px rgba(79, 195, 247, 0.1);
+  max-width: 440px; width: 90%;
+  animation: fadeInUp 1.5s ease-out;
+}
+.login-panel::before, .login-panel::after {
+  content: ''; position: absolute; width: 35px; height: 35px;
+  border: 1px solid rgba(79, 195, 247, 0.6);
+}
+.login-panel::before { top: 12px; left: 12px; border-right: none; border-bottom: none; }
+.login-panel::after { bottom: 12px; right: 12px; border-left: none; border-top: none; }
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.only-text {
+  font-family: 'Great Vibes', cursive;
+  font-size: 2.6em;
+  color: var(--primary);
+  margin-bottom: 35px;
+  text-shadow:
+    0 0 30px rgba(79, 195, 247, 0.6),
+    0 0 60px rgba(79, 195, 247, 0.3);
+  line-height: 1;
+}
+.input-field {
+  width: 100%; padding: 15px 18px;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(79, 195, 247, 0.35);
+  color: #fff;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.15em; letter-spacing: 3px; text-align: center;
+  border-radius: 3px; outline: none;
+  transition: all 0.3s ease;
+}
+.input-field:focus {
+  border-color: var(--primary);
+  background: rgba(0,0,0,0.7);
+  box-shadow: 0 0 20px rgba(79, 195, 247, 0.25);
+}
+.btn-main {
+  display: block; width: 100%;
+  padding: 15px 30px; margin-top: 20px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: #fff;
+  font-family: 'Cinzel', serif;
+  font-size: 0.9em; font-weight: 500;
+  letter-spacing: 3px; text-transform: uppercase;
+  border: none; border-radius: 3px; cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 30px rgba(79, 195, 247, 0.35);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+.btn-main:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 40px rgba(79, 195, 247, 0.6), 0 0 30px rgba(129, 212, 250, 0.3);
+  letter-spacing: 4px;
+}
+.error-msg {
+  color: #ff6b6b; font-size: 0.9em;
+  margin-top: 12px; min-height: 20px;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+}
+.admin-link {
+  position: absolute; bottom: 20px; right: 20px;
+  color: rgba(255,255,255,0.15);
+  font-size: 1.1em;
+  cursor: pointer; z-index: 100;
+  transition: color 0.3s;
+}
+.admin-link:hover { color: var(--primary); }
+.btn-ghost {
+  background: transparent; color: #888;
+  border: 1px solid #333; padding: 10px 25px;
+  font-family: 'Cinzel', serif;
+  font-size: 0.75em; letter-spacing: 2px;
+  cursor: pointer; border-radius: 3px;
+  margin-top: 12px; transition: all 0.3s ease;
+  text-transform: uppercase;
+}
+.btn-ghost:hover { color: var(--primary); border-color: var(--primary); }
+
+/* ========== ADMIN ========== */
+#admin-screen {
+  background: linear-gradient(135deg, #050a15 0%, #030510 100%);
+  overflow-y: auto; justify-content: flex-start;
+  padding: 40px 20px;
+}
+.admin-panel {
+  position: relative; z-index: 5;
+  background: rgba(8, 15, 25, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 40px;
+  border: 1px solid rgba(79, 195, 247, 0.3);
+  max-width: 720px; width: 100%;
+  border-radius: 6px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.9);
+  color: #fff; text-align: left; margin: 20px 0;
+}
+.admin-panel h1 {
+  font-family: 'Cinzel', serif; color: var(--primary);
+  font-size: 1.8em; letter-spacing: 4px;
+  margin-bottom: 6px; text-align: center;
+  text-shadow: 0 0 25px rgba(79, 195, 247, 0.4);
+}
+.admin-panel .admin-sub {
+  text-align: center; color: #7a9db3;
+  font-style: italic; margin-bottom: 30px;
+  font-family: 'Playfair Display', serif;
+}
+.admin-section {
+  margin-bottom: 22px; padding: 20px;
+  background: rgba(0,0,0,0.45);
+  border-left: 3px solid var(--primary);
+  border-radius: 4px;
+}
+.admin-section h2 {
+  font-family: 'Cinzel', serif; color: var(--primary);
+  font-size: 1.05em; letter-spacing: 2px;
+  margin-bottom: 10px; text-transform: uppercase;
+}
+.admin-section .desc {
+  color: #7a9db3; font-style: italic;
+  font-size: 0.9em; margin-bottom: 12px;
+  font-family: 'Playfair Display', serif;
+}
+.admin-input {
+  width: 100%; padding: 10px 12px;
+  background: rgba(0,0,0,0.6);
+  border: 1px solid #1e3a5a; color: #fff;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1em; border-radius: 3px;
+  outline: none;
+  transition: border-color 0.3s;
+}
+.admin-input:focus { border-color: var(--primary); }
+.upload-row {
+  display: flex; align-items: center;
+  gap: 10px; margin-bottom: 8px; flex-wrap: wrap;
+}
+.upload-btn {
+  display: inline-block;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff;
+  border-radius: 3px;
+  cursor: pointer;
+  font-family: 'Cinzel', serif;
+  font-size: 0.8em;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(79, 195, 247, 0.3);
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+.upload-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(79, 195, 247, 0.55);
+}
+.file-status {
+  flex: 1;
+  min-width: 150px;
+  color: #7a9db3;
+  font-family: 'Playfair Display', serif;
+  font-size: 0.85em;
+  font-style: italic;
+  word-break: break-all;
+}
+.file-status.has-file { color: #4fc3f7; font-style: normal; }
+.clear-file-btn {
+  background: transparent;
+  color: #ff6b6b;
+  border: 1px solid #ff6b6b;
+  padding: 6px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.75em;
+  transition: all 0.3s ease;
+  font-family: 'Cinzel', serif;
+  letter-spacing: 1px;
+}
+.clear-file-btn:hover { background: #ff6b6b; color: #fff; }
+.or-divider {
+  text-align: center;
+  color: #3a5a7a;
+  font-size: 0.75em;
+  margin: 8px 0;
+  letter-spacing: 4px;
+  font-family: 'Cinzel', serif;
+}
+.admin-actions {
+  display: flex; gap: 15px; margin-top: 25px;
+  flex-wrap: wrap; justify-content: center;
+}
+.btn-save, .btn-preview, .btn-logout {
+  padding: 12px 30px; border: none;
+  border-radius: 3px; font-family: 'Cinzel', serif;
+  font-size: 0.85em; letter-spacing: 2px;
+  cursor: pointer; text-transform: uppercase;
+  transition: all 0.3s ease;
+}
+.btn-save {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff;
+  box-shadow: 0 8px 20px rgba(79, 195, 247, 0.35);
+}
+.btn-save:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(79, 195, 247, 0.55); }
+.btn-preview {
+  background: linear-gradient(135deg, #7c4dff, #3f1dcb); color: #fff;
+}
+.btn-preview:hover { transform: translateY(-2px); }
+.btn-logout { background: transparent; color: #ff6b6b; border: 1px solid #ff6b6b; }
+.btn-logout:hover { background: #ff6b6b; color: #fff; }
+.status-msg {
+  text-align: center; color: #4fc3f7;
+  margin-top: 15px;
+  font-family: 'Playfair Display', serif;
+  font-style: italic; min-height: 20px;
+}
+
+/* ========== VIDEO SCREEN (with heart overlay) ========== */
+#video-screen {
+  background: #000;
+  transition: opacity 1.5s ease-in-out;
+}
+#mainVideo {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: contain;
+  background: #000;
+  z-index: 1;
+}
+.skip-btn {
+  position: fixed; bottom: 30px; right: 30px;
+  z-index: 100;
+  background: rgba(0,0,0,0.7);
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  padding: 10px 22px;
+  font-family: 'Cinzel', serif;
+  font-size: 0.8em;
+  letter-spacing: 2px;
+  cursor: pointer;
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  text-transform: uppercase;
+}
+.skip-btn.show { opacity: 1; }
+.skip-btn:hover { background: var(--primary); color: #000; }
+.no-video-msg {
+  position: absolute; top: 20%; left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  font-family: 'Great Vibes', cursive;
+  color: var(--primary);
+  font-size: 2em;
+  padding: 20px;
+  text-shadow: 0 0 30px rgba(79, 195, 247, 0.5);
+}
+
+/* Heart with text overlay — semi-transparent, over video */
+.heart-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.6);
+  z-index: 20;
+  opacity: 0;
+  transition: opacity 2s ease-out, transform 2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.heart-container.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+.heart-container.fade {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(1.15);
+  transition: opacity 3s ease-in, transform 3s ease-out;
+}
+.anim-heart {
+  font-size: clamp(220px, 38vw, 420px);
+  color: #4fc3f7;
+  filter:
+    drop-shadow(0 0 40px rgba(79, 195, 247, 0.95))
+    drop-shadow(0 0 90px rgba(79, 195, 247, 0.55));
+  animation: heartPulse 2.2s ease-in-out infinite;
+  line-height: 1;
+  opacity: 0.55;
+}
+.heart-text-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Great Vibes', cursive;
+  font-size: clamp(1.6em, 3.5vw, 3em);
+  color: #fff;
+  text-shadow:
+    0 3px 15px rgba(0,0,0,0.98),
+    0 0 30px rgba(255,255,255,0.7),
+    0 0 60px rgba(129, 212, 250, 0.6);
+  text-align: center;
+  line-height: 1.15;
+  z-index: 6;
+  padding: 0 20px;
+  pointer-events: none;
+  letter-spacing: 1px;
+}
+@keyframes heartPulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 40px rgba(79, 195, 247, 0.95)) drop-shadow(0 0 90px rgba(79, 195, 247, 0.55));
+  }
+  50% {
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 60px rgba(79, 195, 247, 1)) drop-shadow(0 0 120px rgba(129, 212, 250, 0.7));
+  }
+}
+
+/* ========== THANKS PREVIEW (with login video bg) ========== */
+#thanks-preview-screen { background: #000; }
+.thanks-preview-content {
+  position: relative; z-index: 5;
+  padding: 40px 20px;
+  max-width: 90%;
+}
+.thanks-line {
+  font-family: 'Great Vibes', cursive;
+  font-size: clamp(2em, 5.5vw, 4.2em);
+  color: var(--shine);
+  line-height: 1.25;
+  text-shadow:
+    0 0 40px rgba(129, 212, 250, 0.8),
+    0 0 80px rgba(79, 195, 247, 0.5),
+    0 4px 15px rgba(0,0,0,0.9);
+  opacity: 0;
+  margin-bottom: 15px;
+}
+.thanks-sub {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: clamp(1.2em, 2.3vw, 1.8em);
+  color: var(--accent);
+  margin-top: 10px;
+  margin-bottom: 15px;
+  opacity: 0;
+  text-shadow:
+    0 0 25px rgba(129, 212, 250, 0.7),
+    0 3px 10px rgba(0,0,0,0.9);
+  letter-spacing: 1px;
+}
+.thanks-emojis {
+  display: block;
+  margin-top: 20px;
+  font-size: clamp(1.8em, 4vw, 3em);
+  opacity: 0;
+  letter-spacing: 8px;
+  text-shadow: 0 3px 10px rgba(0,0,0,0.8);
+}
+@keyframes thanksReveal {
+  from { opacity: 0; transform: translateY(20px) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+.btn-continue-thanks {
+  display: inline-block;
+  margin-top: 40px;
+  padding: 15px 40px;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(10px);
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  font-family: 'Cinzel', serif;
+  font-size: 0.9em;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.4s ease;
+  opacity: 0;
+}
+.btn-continue-thanks:hover {
+  background: var(--primary);
+  color: #000;
+  letter-spacing: 4px;
+  box-shadow: 0 10px 30px rgba(79, 195, 247, 0.6);
+}
+.floating-hearts { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.float-heart {
+  position: absolute;
+  bottom: -30px;
+  animation: floatUp linear infinite;
+  opacity: 0;
+}
+@keyframes floatUp {
+  0% { bottom: -30px; opacity: 0; }
+  10% { opacity: 0.85; }
+  100% { bottom: 110%; opacity: 0; transform: translateX(60px) rotate(30deg); }
+}
+
+/* ========== LETTER ========== */
+#letter-screen {
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(79, 195, 247, 0.12) 0%, transparent 60%),
+    radial-gradient(ellipse at 70% 80%, rgba(124, 77, 255, 0.1) 0%, transparent 60%),
+    linear-gradient(180deg, #030510 0%, #000000 100%);
+  overflow-y: auto; padding: 40px 20px;
+}
+.letter-outer {
+  position: relative; z-index: 5;
+  max-width: 780px; width: 95%;
+  opacity: 0;
+  transform: translateY(30px);
+}
+.frame-border {
+  position: relative;
+  background: linear-gradient(135deg, #4fc3f7 0%, #01579b 25%, #b3e5fc 50%, #01579b 75%, #4fc3f7 100%);
+  padding: 5px;
+  border-radius: 8px;
+  box-shadow:
+    0 40px 100px rgba(0,0,0,0.95),
+    0 0 60px rgba(79, 195, 247, 0.35),
+    inset 0 0 30px rgba(255,255,255,0.2);
+}
+.frame-inner {
+  background:
+    radial-gradient(ellipse at top left, rgba(79, 195, 247, 0.12) 0%, transparent 55%),
+    radial-gradient(ellipse at bottom right, rgba(124, 77, 255, 0.15) 0%, transparent 55%),
+    linear-gradient(135deg, #0a1929 0%, #0f2942 45%, #051323 100%);
+  color: #e3f2fd;
+  padding: 60px 65px;
+  border-radius: 5px;
+  position: relative;
+  overflow: hidden;
+}
+.frame-inner::before {
+  content: ''; position: absolute; inset: 15px;
+  border: 1px solid rgba(79, 195, 247, 0.35);
+  pointer-events: none;
+  border-radius: 3px;
+}
+.frame-inner::after {
+  content: ''; position: absolute; inset: 22px;
+  border: 1px solid rgba(79, 195, 247, 0.18);
+  pointer-events: none;
+  border-radius: 2px;
+}
+.corner-orn {
+  position: absolute;
+  color: var(--primary);
+  font-size: 1.4em;
+  z-index: 5;
+  opacity: 0.75;
+  text-shadow: 0 0 10px rgba(79, 195, 247, 0.6);
+}
+.corner-tl { top: 25px; left: 30px; }
+.corner-tr { top: 25px; right: 30px; }
+.corner-bl { bottom: 25px; left: 30px; }
+.corner-br { bottom: 25px; right: 30px; }
+.wax-seal {
+  position: absolute; top: -20px; right: 60px;
+  width: 70px; height: 70px;
+  background: radial-gradient(circle at 35% 30%, #4fc3f7 0%, #01579b 40%, #002171 100%);
+  border-radius: 50%;
+  box-shadow:
+    0 8px 20px rgba(0,0,0,0.7),
+    inset 0 -5px 10px rgba(0,0,0,0.35),
+    inset 0 5px 10px rgba(255,255,255,0.25),
+    0 0 25px rgba(79, 195, 247, 0.5);
+  z-index: 6;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,0.95);
+  font-family: 'Great Vibes', cursive;
+  font-size: 2.4em;
+  transform: rotate(-8deg);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+}
+.wax-seal::after {
+  content: ''; position: absolute;
+  bottom: -10px; left: 18px;
+  width: 18px; height: 20px;
+  background: radial-gradient(circle at 50% 30%, #01579b, #002171);
+  border-radius: 50% 50% 60% 40% / 40% 40% 70% 70%;
+  opacity: 0.95;
+}
+.letter-heading {
+  font-family: 'Great Vibes', cursive;
+  color: var(--primary);
+  font-size: clamp(2em, 4.5vw, 3.4em);
+  text-align: center;
+  margin-bottom: 15px;
+  letter-spacing: 1px;
+  position: relative; z-index: 4;
+  line-height: 1.2;
+  text-shadow:
+    0 2px 4px rgba(0,0,0,0.6),
+    0 0 30px rgba(79, 195, 247, 0.5);
+}
+.letter-decoration {
+  text-align: center; color: var(--accent);
+  font-size: 1.4em; margin: 15px 0 30px;
+  letter-spacing: 10px; opacity: 0.75;
+  position: relative; z-index: 4;
+  text-shadow: 0 0 15px rgba(129, 212, 250, 0.5);
+}
+.letter-body-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(1.1em, 1.5vw, 1.3em);
+  line-height: 2;
+  color: #e3f2fd;
+  text-align: center;
+  margin-bottom: 30px;
+  position: relative; z-index: 4;
+  opacity: 0;
+}
+@keyframes paragraphReveal {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.letter-body-text em {
+  color: var(--shine);
+  font-style: italic;
+  font-weight: 500;
+}
+.letter-emojis {
+  display: block;
+  margin-top: 20px;
+  font-size: 1.8em;
+  line-height: 1.2;
+  letter-spacing: 4px;
+}
+.letter-actions {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 40px;
+  position: relative; z-index: 4;
+  opacity: 0;
+  align-items: center;
+}
+.btn-yes-forgive {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff;
+  padding: 15px 35px;
+  border: none;
+  border-radius: 3px;
+  font-family: 'Cinzel', serif;
+  font-size: 0.95em;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(79, 195, 247, 0.5);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+.btn-yes-forgive:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 15px 40px rgba(79, 195, 247, 0.7), 0 0 30px rgba(129, 212, 250, 0.4);
+}
+.no-btn-container {
+  display: flex; align-items: center; justify-content: center;
+  min-width: 220px; min-height: 55px;
+}
+.btn-no-forgive {
+  background: transparent;
+  color: #7a9db3;
+  padding: 15px 35px;
+  border: 1px solid #4a6a8a;
+  border-radius: 3px;
+  font-family: 'Cinzel', serif;
+  font-size: 0.95em;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.btn-no-forgive:hover { background: rgba(122, 157, 179, 0.1); }
+.laughing-emoji {
+  font-size: 3.5em;
+  animation: emojiBounce 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: inline-block;
+}
+@keyframes emojiBounce {
+  0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+  60% { transform: scale(1.3) rotate(15deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* ========== FINAL THANKS ========== */
+#final-thanks-screen { background: #000; }
+.final-content {
+  position: relative; z-index: 5;
+  padding: 30px 20px;
+  max-width: 95%;
+}
+.mega-thanks-1 {
+  font-family: 'Great Vibes', cursive;
+  font-size: clamp(2.5em, 8vw, 6em);
+  color: #fff;
+  line-height: 1.1;
+  text-shadow:
+    0 0 40px rgba(255,255,255,0.5),
+    0 0 80px rgba(79, 195, 247, 0.7),
+    0 4px 20px rgba(0,0,0,0.9);
+  opacity: 0;
+}
+.mega-thanks-2 {
+  font-family: 'Great Vibes', cursive;
+  font-size: clamp(2em, 6vw, 4.8em);
+  color: var(--shine);
+  line-height: 1.1;
+  margin-top: 10px;
+  text-shadow:
+    0 0 30px rgba(129, 212, 250, 0.85),
+    0 0 60px rgba(79, 195, 247, 0.5),
+    0 4px 20px rgba(0,0,0,0.9);
+  opacity: 0;
+}
+.mega-emojis {
+  display: block;
+  margin-top: 30px;
+  font-size: clamp(2em, 4vw, 3.5em);
+  opacity: 0;
+  letter-spacing: 8px;
+}
+@keyframes megaReveal {
+  from { opacity: 0; transform: scale(0.7); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes emojiWiggle {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+.confetti-hearts { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
+.confetti-heart {
+  position: absolute;
+  top: -30px;
+  animation: confettiFall linear infinite;
+}
+@keyframes confettiFall {
+  0% { top: -30px; opacity: 0; transform: rotate(0deg); }
+  10% { opacity: 1; }
+  100% { top: 110%; opacity: 0; transform: rotate(720deg) translateX(50px); }
+}
+
+.music-toggle {
+  position: fixed; bottom: 20px; left: 20px;
+  z-index: 100;
+  background: rgba(5, 15, 30, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(79, 195, 247, 0.4);
+  color: var(--primary);
+  padding: 8px 14px; border-radius: 30px;
+  cursor: pointer;
+  font-family: 'Cinzel', serif;
+  font-size: 0.7em; letter-spacing: 1px;
+  transition: all 0.3s ease; opacity: 0.7;
+}
+.music-toggle:hover { opacity: 1; transform: scale(1.05); }
+
+@media (max-width: 768px) {
+  .login-panel {
+    padding: 45px 30px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .admin-panel {
+    padding: 25px 20px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  /* Letter — compact for mobile so no scroll */
+  #letter-screen { padding: 15px 10px; }
+  .frame-inner { padding: 30px 22px 25px; }
+  .letter-heading { font-size: 1.6em; margin-bottom: 8px; }
+  .letter-decoration { font-size: 1.1em; margin: 10px 0 15px; letter-spacing: 8px; }
+  .letter-body-text { font-size: 0.98em; line-height: 1.6; margin-bottom: 15px; }
+  .letter-emojis { font-size: 1.3em; margin-top: 10px; }
+  .letter-actions { margin-top: 20px; gap: 12px; }
+  .btn-yes-forgive, .btn-no-forgive { padding: 12px 25px; font-size: 0.85em; }
+  .wax-seal { width: 50px; height: 50px; font-size: 1.7em; right: 18px; top: -18px; }
+  .frame-inner::before { inset: 10px; }
+  .frame-inner::after { inset: 15px; }
+  .corner-orn { font-size: 1.1em; }
+  .corner-tl, .corner-tr { top: 15px; }
+  .corner-bl, .corner-br { bottom: 15px; }
+  .corner-tl, .corner-bl { left: 20px; }
+  .corner-tr, .corner-br { right: 20px; }
+  .no-btn-container { min-width: 150px; min-height: 45px; }
+  .upload-row { flex-direction: column; align-items: stretch; }
+  .file-status { min-width: 0; }
+  /* Reduce heavy glow effects on mobile for smoother performance */
+  .anim-heart {
+    filter: drop-shadow(0 0 25px rgba(79, 195, 247, 0.9));
+    font-size: clamp(180px, 45vw, 300px);
+  }
+  @keyframes heartPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.06); }
+  }
+  .music-toggle {
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+  }
+  .btn-continue-thanks {
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+  }
+}
+@media (max-width: 480px) {
+  .frame-inner { padding: 22px 15px 20px; }
+  .letter-heading { font-size: 1.4em; }
+  .letter-body-text { font-size: 0.9em; line-height: 1.5; }
+  .btn-yes-forgive, .btn-no-forgive { padding: 10px 20px; font-size: 0.78em; letter-spacing: 1.5px; }
+  .wax-seal { width: 42px; height: 42px; font-size: 1.4em; right: 15px; top: -14px; }
+  #letter-screen { padding: 10px 8px; }
+}
+/* Enable hardware acceleration on animated elements (will-change without overriding transforms) */
+.heart-container, .anim-heart, .letter-outer, .thanks-line, .mega-thanks-1, .mega-thanks-2, .heart-text-overlay {
+  will-change: transform, opacity;
+}
+.bg-video { will-change: opacity; }
+
+/* ========== ANIMATIONS ONLY WHEN SCREEN ACTIVE ========== */
+#thanks-preview-screen.active .thanks-line { animation: thanksReveal 2s ease-out 0.5s forwards; }
+#thanks-preview-screen.active .thanks-sub { animation: thanksReveal 2s ease-out 2s forwards; }
+#thanks-preview-screen.active .thanks-emojis { animation: thanksReveal 2s ease-out 3s forwards, wiggle 3s ease-in-out 3.5s infinite; }
+#thanks-preview-screen.active .btn-continue-thanks { animation: thanksReveal 2s ease-out 4s forwards; }
+
+#letter-screen.active .letter-outer { animation: fadeInUp 2s ease-out forwards; }
+#letter-screen.active .letter-body-text { animation: paragraphReveal 2s ease-out 0.5s forwards; }
+#letter-screen.active .letter-actions { animation: paragraphReveal 2s ease-out 2s forwards; }
+
+#final-thanks-screen.active .mega-thanks-1 { animation: megaReveal 2s ease-out 0.5s forwards; }
+#final-thanks-screen.active .mega-thanks-2 { animation: megaReveal 2s ease-out 2s forwards; }
+#final-thanks-screen.active .mega-emojis { animation: megaReveal 2s ease-out 3.5s forwards, emojiWiggle 3s ease-in-out 4s infinite; }
+</style>
+</head>
+<body>
+
+<audio id="bgMusic" loop preload="auto">
+  <source id="bgMusicSource" src="https://cdn.pixabay.com/download/audio/2022/10/25/audio_946bc7a4b3.mp3?filename=sad-emotional-piano-125090.mp3" type="audio/mpeg">
+</audio>
+
+<button class="music-toggle" id="musicToggle" onclick="toggleMusic()">♪ MUSIC ON</button>
+
+<!-- 1. LOGIN -->
+<div class="screen active" id="login-screen">
+  <video class="bg-video" id="loginVideo" autoplay muted loop playsinline preload="auto"></video>
+  <div class="vignette"></div>
+  <div class="login-panel">
+    <p class="only-text">This is for you only</p>
+    <input type="password" class="input-field" id="passwordInput" placeholder="•••••••" autocomplete="off">
+    <button class="btn-main" onclick="checkLogin()">Enter</button>
+    <div class="error-msg" id="loginError"></div>
+  </div>
+  <div class="admin-link" onclick="showAdminLogin()">⚙</div>
+</div>
+
+<!-- 2. ADMIN LOGIN -->
+<div class="screen" id="admin-login-screen">
+  <video class="bg-video" id="adminLoginVideo" autoplay muted loop playsinline preload="none"></video>
+  <div class="vignette"></div>
+  <div class="login-panel">
+    <p class="only-text" style="font-size: 1.8em;">Admin Access</p>
+    <input type="password" class="input-field" id="adminPassInput" placeholder="•••••••" autocomplete="off">
+    <button class="btn-main" onclick="checkAdminLogin()">Enter Panel</button>
+    <div class="error-msg" id="adminError"></div>
+    <button class="btn-ghost" onclick="backToLogin()">← Back</button>
+  </div>
+</div>
+
+<!-- 3. ADMIN PANEL -->
+<div class="screen" id="admin-screen">
+  <div class="admin-panel">
+    <h1>ADMIN PANEL</h1>
+    <p class="admin-sub">Upload videos directly OR paste URLs</p>
+    <div id="storageIndicator" style="text-align:center; padding:12px 15px; margin-bottom:20px; background:rgba(0,0,0,0.4); border-radius:4px; font-family:'Playfair Display', serif; font-style:italic; font-size:0.9em; border:1px solid rgba(79,195,247,0.2);">
+      Checking storage...
+    </div>
+    <div class="admin-section">
+      <h2>🔐 Her Login Password (DOB)</h2>
+      <p class="desc">She types this in any format — only digits are checked.</p>
+      <input type="text" class="admin-input" id="adminDob" placeholder="e.g. 11022005">
+    </div>
+    <div class="admin-section">
+      <h2>🎬 Video 1 — Login Page Background</h2>
+      <p class="desc">Plays behind login screen AND behind the "I have written something" message.</p>
+      <div class="upload-row">
+        <label class="upload-btn">📁 Upload Video <input type="file" accept="video/*" onchange="handleFileUpload('login', this)" hidden></label>
+        <span class="file-status" id="statusLogin">No file uploaded</span>
+        <button class="clear-file-btn" onclick="clearFile('login')">✕ Clear</button>
+      </div>
+      <div class="or-divider">— OR PASTE URL —</div>
+      <input type="text" class="admin-input" id="videoLogin" placeholder="https://.../video.mp4">
+    </div>
+    <div class="admin-section">
+      <h2>🎥 Video 2 — Main Video (plays behind heart)</h2>
+      <p class="desc">Starts playing when heart "Thank you for everything" appears. Heart is transparent so video is visible.</p>
+      <div class="upload-row">
+        <label class="upload-btn">📁 Upload Video <input type="file" accept="video/*" onchange="handleFileUpload('main', this)" hidden></label>
+        <span class="file-status" id="statusMain">No file uploaded</span>
+        <button class="clear-file-btn" onclick="clearFile('main')">✕ Clear</button>
+      </div>
+      <div class="or-divider">— OR PASTE URL —</div>
+      <input type="text" class="admin-input" id="videoMain" placeholder="https://.../video.mp4">
+    </div>
+    <div class="admin-section">
+      <h2>🎊 Video 3 — Final Thank You Screen</h2>
+      <p class="desc">Plays behind the big THANK YOU screen after she clicks 'yes i forgive you'.</p>
+      <div class="upload-row">
+        <label class="upload-btn">📁 Upload Video <input type="file" accept="video/*" onchange="handleFileUpload('final', this)" hidden></label>
+        <span class="file-status" id="statusFinal">No file uploaded</span>
+        <button class="clear-file-btn" onclick="clearFile('final')">✕ Clear</button>
+      </div>
+      <div class="or-divider">— OR PASTE URL —</div>
+      <input type="text" class="admin-input" id="videoFinal" placeholder="https://.../video.mp4">
+    </div>
+    <div class="admin-section">
+      <h2>🎵 Background Music (Optional)</h2>
+      <p class="desc">Upload an audio file OR paste .mp3 URL.</p>
+      <div class="upload-row">
+        <label class="upload-btn">🎵 Upload Audio <input type="file" accept="audio/*" onchange="handleFileUpload('music', this)" hidden></label>
+        <span class="file-status" id="statusMusic">No file uploaded</span>
+        <button class="clear-file-btn" onclick="clearFile('music')">✕ Clear</button>
+      </div>
+      <div class="or-divider">— OR PASTE URL —</div>
+      <input type="text" class="admin-input" id="musicUrl" placeholder="https://.../song.mp3">
+    </div>
+    <div class="admin-actions">
+      <button class="btn-save" onclick="saveConfig()">💾 Save URL & Settings</button>
+      <button class="btn-preview" onclick="previewExperience()">👁 Preview</button>
+      <button class="btn-logout" onclick="logoutAdmin()">Logout</button>
+    </div>
+    <div class="status-msg" id="statusMsg"></div>
+    <p style="text-align:center; margin-top:20px; color:#3a5a7a; font-size:0.8em; font-style:italic; font-family:'Playfair Display', serif;">
+      💡 Uploaded files save automatically. URL fields need "Save" button.
+    </p>
+  </div>
+</div>
+
+<!-- 4. VIDEO + HEART (combined) -->
+<div class="screen" id="video-screen">
+  <video id="mainVideo" playsinline preload="none"></video>
+  <div class="vignette-soft"></div>
+  <div class="heart-container" id="heartContainer">
+    <div class="anim-heart">💙</div>
+    <div class="heart-text-overlay">Thank you<br>for everything</div>
+  </div>
+  <div class="no-video-msg" id="noVideoMsg" style="display:none;">✨ Ek pal ruk... ✨</div>
+  <button class="skip-btn" id="skipBtn" onclick="skipVideo()">Skip →</button>
+</div>
+
+<!-- 5. THANKS PREVIEW (login video bg + "I have written something") -->
+<div class="screen" id="thanks-preview-screen">
+  <video class="bg-video" id="thanksPreviewVideo" autoplay muted loop playsinline preload="none"></video>
+  <div class="vignette"></div>
+  <div class="floating-hearts" id="thanksHearts"></div>
+  <div class="thanks-preview-content">
+    <div class="thanks-line">
+      I have written<br>
+      something for you
+    </div>
+    <div class="thanks-sub">please read it 💙</div>
+    <span class="thanks-emojis">💙 ✨ 💫</span>
+    <br>
+    <button class="btn-continue-thanks" onclick="goToLetter()">Read My Letter →</button>
+  </div>
+</div>
+
+<!-- 6. LETTER -->
+<div class="screen" id="letter-screen">
+  <div class="letter-outer">
+    <div class="frame-border">
+      <div class="frame-inner">
+        <div class="wax-seal">A</div>
+        <div class="corner-orn corner-tl">✦</div>
+        <div class="corner-orn corner-tr">✦</div>
+        <div class="corner-orn corner-bl">✦</div>
+        <div class="corner-orn corner-br">✦</div>
+        <h1 class="letter-heading">let me apologize<br>one last time</h1>
+        <div class="letter-decoration">✦ ✦ ✦</div>
+        <p class="letter-body-text">
+          I know I hurt you — deeply — and I am truly sorry. <em>Your forgiveness means everything to me.</em> From today, I promise you only smiles, only warmth, only peace. You are the most beautiful soul in my life, and I will cherish you always. Thank you, thank you — from the depths of my heart.
+          <span class="letter-emojis">💙 ✨ 💙</span>
+        </p>
+        <div class="letter-actions">
+          <button class="btn-yes-forgive" onclick="forgive()">yes i forgive you</button>
+          <div class="no-btn-container" id="noBtnContainer">
+            <button class="btn-no-forgive" id="noBtn" onclick="showLaughingEmoji()">no i didnt forgive you</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 7. FINAL THANKS -->
+<div class="screen" id="final-thanks-screen">
+  <video class="bg-video" id="finalVideo" autoplay muted loop playsinline preload="none"></video>
+  <div class="vignette"></div>
+  <div class="confetti-hearts" id="confettiHearts"></div>
+  <div class="final-content">
+    <div class="mega-thanks-1">thankyouuuuuuuuuuu</div>
+    <div class="mega-thanks-2">sooooooooo muuuuuuuuchhhhhhhh 💙</div>
+    <span class="mega-emojis">💙 ✨ 💫 💎 ⭐ 💙 ✨ 💙</span>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   🔥 FIREBASE CONFIG
+   ============================================================ */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCtKdoYtPOCg_UABcYEfdKPCKo2qJTy7ik",
+  authDomain: "for-me-11-11.firebaseapp.com",
+  projectId: "for-me-11-11",
+  storageBucket: "for-me-11-11.firebasestorage.app",
+  messagingSenderId: "1079186064872",
+  appId: "1:1079186064872:web:541c895c105c249e6bd05d"
+};
+const ADMIN_PASSWORD = 'jaishreekrishnaji';
+const DEFAULT_CONFIG = {
+  herDob: '11022005',
+  videos: { login: '', main: '', final: '' },
+  music: 'https://cdn.pixabay.com/download/audio/2022/10/25/audio_946bc7a4b3.mp3?filename=sad-emotional-piano-125090.mp3',
+  storagePaths: {}
+};
+
+/* ========== FIREBASE INIT ========== */
+let USE_FIREBASE = false;
+let fbStorage = null;
+let fbDb = null;
+if (typeof firebase !== 'undefined' && FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.projectId) {
+  try {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    fbStorage = firebase.storage();
+    fbDb = firebase.firestore();
+    USE_FIREBASE = true;
+    console.log('✓ Firebase connected — cloud sync active');
+  } catch(e) { console.error('Firebase init failed:', e); }
+} else {
+  console.log('Firebase not configured — using local browser storage');
+}
+
+/* ========== INDEXEDDB ========== */
+const DB_NAME = 'apologyMedia';
+const STORE_NAME = 'files';
+let dbInstance = null;
+function openDB() {
+  return new Promise((resolve, reject) => {
+    if (dbInstance) return resolve(dbInstance);
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => { dbInstance = req.result; resolve(dbInstance); };
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME);
+    };
+  });
+}
+async function saveFileToDB(key, file) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).put(file, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function getFileFromDB(key) {
+  try {
+    const db = await openDB();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const req = tx.objectStore(STORE_NAME).get(key);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  } catch(e) { return null; }
+}
+async function deleteFileFromDB(key) {
+  try {
+    const db = await openDB();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      tx.objectStore(STORE_NAME).delete(key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch(e) {}
+}
+
+const blobUrls = {};
+async function resolveMediaUrl(dbKey, fallbackUrl) {
+  if (fallbackUrl && fallbackUrl.trim()) return fallbackUrl.trim();
+  const file = await getFileFromDB(dbKey);
+  if (file) {
+    if (blobUrls[dbKey]) URL.revokeObjectURL(blobUrls[dbKey]);
+    const url = URL.createObjectURL(file);
+    blobUrls[dbKey] = url;
+    return url;
+  }
+  return '';
+}
+
+/* ========== FILE UPLOAD HANDLERS ========== */
+async function handleFileUpload(slot, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const statusId = 'status' + slot.charAt(0).toUpperCase() + slot.slice(1);
+  const statusEl = document.getElementById(statusId);
+  const sizeMB = (file.size / (1024*1024)).toFixed(1);
+  if (file.size > 500 * 1024 * 1024) {
+    if (!confirm(`File is very large (${sizeMB}MB). Upload anyway?`)) { input.value = ''; return; }
+  }
+  statusEl.classList.remove('has-file');
+  try {
+    if (USE_FIREBASE) {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = `media/${slot}_${Date.now()}_${safeName}`;
+      const uploadTask = fbStorage.ref(path).put(file);
+      await new Promise((resolve, reject) => {
+        uploadTask.on('state_changed',
+          (snapshot) => {
+            const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+            statusEl.textContent = `☁ Uploading ${pct}% ...`;
+          },
+          reject, resolve
+        );
+      });
+      const url = await uploadTask.snapshot.ref.getDownloadURL();
+      if (CONFIG.storagePaths && CONFIG.storagePaths[slot]) {
+        try { await fbStorage.ref(CONFIG.storagePaths[slot]).delete(); } catch(e) {}
+      }
+      if (slot === 'music') CONFIG.music = url;
+      else CONFIG.videos[slot] = url;
+      if (!CONFIG.storagePaths) CONFIG.storagePaths = {};
+      CONFIG.storagePaths[slot] = path;
+      await saveConfigToStorage(CONFIG);
+      statusEl.textContent = `☁ ${file.name} (${sizeMB}MB) — Firebase`;
+    } else {
+      statusEl.textContent = `⏳ Saving ${file.name}...`;
+      await saveFileToDB(slot, file);
+      statusEl.textContent = `✓ ${file.name} (${sizeMB}MB) — Local`;
+    }
+    statusEl.classList.add('has-file');
+    populateAdminForm();
+    await applyConfig();
+  } catch(e) {
+    const errMsg = (e.message || 'failed').toLowerCase();
+    let helpful;
+    if (errMsg.includes('storage') || errMsg.includes('bucket') || errMsg.includes('403') || errMsg.includes('404') || errMsg.includes('permission') || errMsg.includes('unauthorized')) {
+      helpful = '✗ Firebase Storage needs Blaze upgrade. Use URL field (Cloudinary works free).';
+    } else {
+      helpful = `✗ Error: ${e.message || 'failed'}`;
+    }
+    statusEl.textContent = helpful;
+    statusEl.classList.remove('has-file');
+    console.error(e);
+  }
+  input.value = '';
+}
+
+async function clearFile(slot) {
+  if (!confirm('Remove uploaded file?')) return;
+  if (USE_FIREBASE && CONFIG.storagePaths && CONFIG.storagePaths[slot]) {
+    try { await fbStorage.ref(CONFIG.storagePaths[slot]).delete(); } catch(e) {}
+    delete CONFIG.storagePaths[slot];
+  }
+  if (slot === 'music') CONFIG.music = '';
+  else CONFIG.videos[slot] = '';
+  await deleteFileFromDB(slot);
+  if (blobUrls[slot]) { URL.revokeObjectURL(blobUrls[slot]); delete blobUrls[slot]; }
+  await saveConfigToStorage(CONFIG);
+  populateAdminForm();
+  await applyConfig();
+  await updateAllFileStatuses();
+}
+
+async function updateAllFileStatuses() {
+  const slots = ['login', 'main', 'final', 'music'];
+  for (const slot of slots) {
+    const statusId = 'status' + slot.charAt(0).toUpperCase() + slot.slice(1);
+    const el = document.getElementById(statusId);
+    if (!el) continue;
+    if (USE_FIREBASE && CONFIG.storagePaths && CONFIG.storagePaths[slot]) {
+      const parts = CONFIG.storagePaths[slot].split('_');
+      const filename = parts.slice(2).join('_') || 'file';
+      el.textContent = `☁ ${filename} — Firebase`;
+      el.classList.add('has-file');
+      continue;
+    }
+    const file = await getFileFromDB(slot);
+    if (file) {
+      const sizeMB = (file.size / (1024*1024)).toFixed(1);
+      el.textContent = `✓ ${file.name || 'File'} (${sizeMB}MB) — Local`;
+      el.classList.add('has-file');
+    } else {
+      el.textContent = 'No file uploaded';
+      el.classList.remove('has-file');
+    }
+  }
+}
+
+/* ========== CONFIG ========== */
+async function loadConfig() {
+  if (USE_FIREBASE) {
+    try {
+      // Timeout Firestore read after 8s to prevent hanging on slow mobile networks
+      const docSnap = await Promise.race([
+        fbDb.collection('app').doc('config').get(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('firestore-timeout')), 8000))
+      ]);
+      if (docSnap.exists) {
+        const data = docSnap.data();
+        return { ...DEFAULT_CONFIG, ...data, videos: {...DEFAULT_CONFIG.videos, ...(data.videos || {})} };
+      }
+    } catch(e) { console.error('Load from Firestore failed:', e && e.message); }
+  }
+  try {
+    const saved = localStorage.getItem('apologyConfig');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return { ...DEFAULT_CONFIG, ...parsed, videos: {...DEFAULT_CONFIG.videos, ...(parsed.videos || {})} };
+    }
+  } catch(e) {}
+  return { ...DEFAULT_CONFIG };
+}
+async function saveConfigToStorage(config) {
+  try { localStorage.setItem('apologyConfig', JSON.stringify(config)); } catch(e) {}
+  if (USE_FIREBASE) {
+    try {
+      await fbDb.collection('app').doc('config').set(config);
+      return true;
+    } catch(e) { console.error('Save to Firestore failed:', e); return false; }
+  }
+  return true;
+}
+let CONFIG = { ...DEFAULT_CONFIG };
+const resolvedMedia = { login: '', main: '', final: '', music: '' };
+
+async function applyConfig() {
+  resolvedMedia.login = await resolveMediaUrl('login', CONFIG.videos.login);
+  resolvedMedia.main = await resolveMediaUrl('main', CONFIG.videos.main);
+  resolvedMedia.final = await resolveMediaUrl('final', CONFIG.videos.final);
+  resolvedMedia.music = await resolveMediaUrl('music', CONFIG.music);
+
+  // Login video used in 3 places: login screen, admin login, AND thanks preview
+  setVideoSrc('loginVideo', resolvedMedia.login);
+  setVideoSrc('adminLoginVideo', resolvedMedia.login);
+  setVideoSrc('thanksPreviewVideo', resolvedMedia.login);
+  setVideoSrc('finalVideo', resolvedMedia.final);
+
+  if (resolvedMedia.music) {
+    const music = document.getElementById('bgMusic');
+    const src = document.getElementById('bgMusicSource');
+    if (src.src !== resolvedMedia.music) {
+      const wasPlaying = !music.paused;
+      src.src = resolvedMedia.music;
+      music.load();
+      // Restore playback if music was already playing (prevents disruption)
+      if (wasPlaying) {
+        const p = music.play();
+        if (p && p.catch) p.catch(()=>{});
+      }
+    }
+  }
+}
+
+function setVideoSrc(elId, url) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (url && url.trim()) {
+    // Only update if URL actually changed (prevents unnecessary reloads/pauses)
+    if (el.getAttribute('src') !== url) {
+      el.src = url;
+      // Don't call load() here — that forces preload. Let it lazy-load when screen activates.
+    }
+    el.style.display = 'block';
+    // If this video is on the currently active screen, play it now
+    const parentScreen = el.closest('.screen');
+    if (parentScreen && parentScreen.classList.contains('active')) {
+      if (el.preload !== 'auto') el.preload = 'auto';
+      const p = el.play();
+      if (p && p.catch) p.catch(()=>{});
+    }
+    el.onerror = () => { el.style.display = 'none'; };
+  } else {
+    el.removeAttribute('src');
+    el.style.display = 'none';
+  }
+}
+
+function pauseScreenVideos(el) {
+  if (!el) return;
+  el.querySelectorAll('video').forEach(v => {
+    try { v.pause(); } catch(e) {}
+  });
+}
+function playScreenVideos(el) {
+  if (!el) return;
+  el.querySelectorAll('video').forEach(v => {
+    if (v.src && v.getAttribute('src')) {
+      // Load if not already loaded
+      if (v.preload !== 'auto') v.preload = 'auto';
+      const p = v.play();
+      if (p && p.catch) p.catch(()=>{});
+    }
+  });
+}
+function switchScreen(hideId, showId) {
+  const hideEl = document.getElementById(hideId);
+  const showEl = document.getElementById(showId);
+  if (hideEl) { hideEl.classList.remove('active'); pauseScreenVideos(hideEl); }
+  if (showEl) { showEl.classList.add('active'); playScreenVideos(showEl); }
+}
+function activateOnly(showId) {
+  document.querySelectorAll('.screen').forEach(s => {
+    if (s.id !== showId) {
+      s.classList.remove('active');
+      pauseScreenVideos(s);
+    }
+  });
+  const showEl = document.getElementById(showId);
+  if (showEl) { showEl.classList.add('active'); playScreenVideos(showEl); }
+}
+
+function normalizeDob(str) { return (str || '').replace(/[^0-9]/g, ''); }
+
+/* ========== LOGIN ========== */
+function checkLogin() {
+  const input = document.getElementById('passwordInput').value.trim();
+  const errEl = document.getElementById('loginError');
+  if (input === ADMIN_PASSWORD) {
+    errEl.textContent = '';
+    document.getElementById('passwordInput').value = '';
+    openAdminPanel();
+    return;
+  }
+  const normalized = normalizeDob(input);
+  const expected = normalizeDob(CONFIG.herDob);
+  if (normalized === expected && expected.length > 0) {
+    errEl.textContent = '';
+    // CRITICAL: Play music RIGHT HERE with fresh user gesture (before async startExperience)
+    // Mobile browsers (iOS/Android) strictly require user gesture in same tick
+    const music = document.getElementById('bgMusic');
+    if (music) {
+      music.muted = false;
+      music.volume = 0.6;
+      const p = music.play();
+      if (p && p.catch) p.catch(err => console.warn('Music play failed:', err.name));
+      musicOn = true;
+    }
+    startExperience();
+  } else {
+    errEl.textContent = 'Incorrect. Try again.';
+    document.getElementById('passwordInput').value = '';
+  }
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('passwordInput');
+  if (el) el.addEventListener('keypress', (e) => { if (e.key === 'Enter') checkLogin(); });
+  const adminEl = document.getElementById('adminPassInput');
+  if (adminEl) adminEl.addEventListener('keypress', (e) => { if (e.key === 'Enter') checkAdminLogin(); });
+});
+
+/* ========== ADMIN ========== */
+function showAdminLogin() {
+  activateOnly('admin-login-screen');
+  document.getElementById('adminPassInput').value = '';
+  document.getElementById('adminError').textContent = '';
+}
+function backToLogin() { activateOnly('login-screen'); }
+function checkAdminLogin() {
+  const pass = document.getElementById('adminPassInput').value.trim();
+  const errEl = document.getElementById('adminError');
+  if (pass === ADMIN_PASSWORD) {
+    errEl.textContent = '';
+    openAdminPanel();
+  } else {
+    errEl.textContent = 'Wrong password.';
+    document.getElementById('adminPassInput').value = '';
+  }
+}
+async function openAdminPanel() {
+  populateAdminForm();
+  await updateAllFileStatuses();
+  updateStorageIndicator();
+  activateOnly('admin-screen');
+}
+function updateStorageIndicator() {
+  const el = document.getElementById('storageIndicator');
+  if (!el) return;
+  if (USE_FIREBASE) {
+    el.textContent = '☁ Firebase Connected — settings sync to cloud';
+    el.style.color = '#4fc3f7';
+    el.style.borderColor = 'rgba(79,195,247,0.4)';
+  } else {
+    el.textContent = '⚠ Local Storage Only — files may be lost on cache clear.';
+    el.style.color = '#ffa502';
+    el.style.borderColor = 'rgba(255,165,2,0.4)';
+  }
+}
+function logoutAdmin() { activateOnly('login-screen'); }
+function populateAdminForm() {
+  document.getElementById('adminDob').value = CONFIG.herDob || '';
+  document.getElementById('videoLogin').value = CONFIG.videos.login || '';
+  document.getElementById('videoMain').value = CONFIG.videos.main || '';
+  document.getElementById('videoFinal').value = CONFIG.videos.final || '';
+  document.getElementById('musicUrl').value = CONFIG.music || '';
+}
+async function saveConfig() {
+  CONFIG.herDob = normalizeDob(document.getElementById('adminDob').value) || DEFAULT_CONFIG.herDob;
+  CONFIG.videos.login = document.getElementById('videoLogin').value.trim();
+  CONFIG.videos.main = document.getElementById('videoMain').value.trim();
+  CONFIG.videos.final = document.getElementById('videoFinal').value.trim();
+  CONFIG.music = document.getElementById('musicUrl').value.trim();
+  const ok = await saveConfigToStorage(CONFIG);
+  await applyConfig();
+  const status = document.getElementById('statusMsg');
+  if (ok) {
+    status.textContent = USE_FIREBASE ? '✓ Saved to Firebase (cloud sync active)!' : '✓ Saved locally!';
+    status.style.color = '#4fc3f7';
+  } else if (USE_FIREBASE) {
+    status.textContent = '⚠ Saved locally, but Firebase sync failed (check internet / rules)';
+    status.style.color = '#ffa502';
+  } else {
+    status.textContent = '✗ Save failed.';
+    status.style.color = '#ff6b6b';
+  }
+  setTimeout(() => { status.textContent = ''; }, 4000);
+}
+async function previewExperience() { await saveConfig(); activateOnly('login-screen'); }
+
+/* ========== PARTICLES ========== */
+function makeFloatingHearts(containerId, count = 20) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  const hearts = ['💙','✨','💫','💎','⭐'];
+  for (let i = 0; i < count; i++) {
+    const h = document.createElement('div');
+    h.className = 'float-heart';
+    h.textContent = hearts[Math.floor(Math.random()*hearts.length)];
+    h.style.left = Math.random() * 100 + '%';
+    h.style.animationDuration = (6 + Math.random() * 8) + 's';
+    h.style.animationDelay = (Math.random() * 5) + 's';
+    h.style.fontSize = (20 + Math.random() * 22) + 'px';
+    container.appendChild(h);
+  }
+}
+function makeConfettiHearts() {
+  const container = document.getElementById('confettiHearts');
+  container.innerHTML = '';
+  const hearts = ['💙','✨','💫','💎','⭐','🌟','💙','✨'];
+  for (let i = 0; i < 35; i++) {
+    const h = document.createElement('div');
+    h.className = 'confetti-heart';
+    h.textContent = hearts[Math.floor(Math.random()*hearts.length)];
+    h.style.left = Math.random() * 100 + '%';
+    h.style.animationDuration = (4 + Math.random() * 6) + 's';
+    h.style.animationDelay = (Math.random() * 3) + 's';
+    h.style.fontSize = (20 + Math.random() * 25) + 'px';
+    container.appendChild(h);
+  }
+}
+
+/* ========== MAIN FLOW ========== */
+let flowTimeouts = [];
+function clearFlowTimeouts() {
+  flowTimeouts.forEach(t => clearTimeout(t));
+  flowTimeouts = [];
+}
+
+async function startExperience() {
+  clearFlowTimeouts();
+
+  // Show loading feedback on login button
+  const loginBtn = document.querySelector('#login-screen .btn-main');
+  const originalBtnText = loginBtn ? loginBtn.textContent : 'Enter';
+  if (loginBtn) { loginBtn.textContent = 'Preparing...'; loginBtn.disabled = true; }
+
+  const music = document.getElementById('bgMusic');
+  music.volume = 0.5;
+  const mp = music.play();
+  if (mp && mp.catch) mp.catch(()=>{});
+
+  // Reset heart & video state
+  const heartContainer = document.getElementById('heartContainer');
+  heartContainer.classList.remove('show', 'fade');
+
+  const video = document.getElementById('mainVideo');
+  video.onended = null;
+  video.onerror = null;
+  try { video.pause(); video.currentTime = 0; } catch(e) {}
+
+  const noMsg = document.getElementById('noVideoMsg');
+  const skipBtn = document.getElementById('skipBtn');
+  skipBtn.classList.remove('show');
+
+  const mainUrl = resolvedMedia.main;
+
+  // PRELOAD main video BEFORE screen switch — makes it feel instant
+  if (mainUrl) {
+    noMsg.style.display = 'none';
+    video.style.display = 'block';
+    video.muted = true; // MUTED — only bg music plays sound
+    if (video.getAttribute('src') !== mainUrl) {
+      video.src = mainUrl;
+      video.preload = 'auto';
+      video.load();
+    }
+
+    // Wait for video to be ready (canplay) OR max 1.5s — whichever first
+    await new Promise(resolve => {
+      let done = false;
+      const finish = () => { if (!done) { done = true; resolve(); } };
+      video.addEventListener('canplay', finish, { once: true });
+      video.addEventListener('loadeddata', finish, { once: true });
+      setTimeout(finish, 1500);
+    });
+  }
+
+  // Restore login button text (in case user comes back)
+  if (loginBtn) { loginBtn.textContent = originalBtnText; loginBtn.disabled = false; }
+
+  // Switch to video screen — video + heart at same time
+  switchScreen('login-screen', 'video-screen');
+
+  if (mainUrl) {
+    // Play muted (guaranteed to work — no user gesture issue)
+    const playPromise = video.play();
+    if (playPromise && playPromise.catch) playPromise.catch(()=>{});
+
+    video.onended = () => goToThanksPreview();
+    video.onerror = () => {
+      noMsg.style.display = 'block';
+      video.style.display = 'none';
+      flowTimeouts.push(setTimeout(goToThanksPreview, 5000));
+    };
+    flowTimeouts.push(setTimeout(() => skipBtn.classList.add('show'), 3000));
+    // Max fallback: 10 min
+    flowTimeouts.push(setTimeout(() => {
+      if (document.getElementById('video-screen').classList.contains('active')) goToThanksPreview();
+    }, 600000));
+
+    // Anticipatory preload of thanks-preview video (for smooth next transition)
+    flowTimeouts.push(setTimeout(() => {
+      const tp = document.getElementById('thanksPreviewVideo');
+      if (tp && tp.getAttribute('src')) { tp.preload = 'auto'; try { tp.load(); } catch(e) {} }
+    }, 3000));
+  } else {
+    noMsg.style.display = 'block';
+    video.style.display = 'none';
+    skipBtn.classList.add('show');
+    flowTimeouts.push(setTimeout(goToThanksPreview, 9000));
+  }
+
+  // Heart animation on top of video
+  flowTimeouts.push(setTimeout(() => heartContainer.classList.add('show'), 500));
+  flowTimeouts.push(setTimeout(() => heartContainer.classList.add('fade'), 5000));
+}
+
+function skipVideo() {
+  const video = document.getElementById('mainVideo');
+  try { video.pause(); } catch(e) {}
+  goToThanksPreview();
+}
+
+function goToThanksPreview() {
+  const video = document.getElementById('mainVideo');
+  try { video.pause(); } catch(e) {}
+  video.onended = null;
+  video.onerror = null;
+  document.getElementById('skipBtn').classList.remove('show');
+
+  // Ensure thanks-preview video (login video) is playing
+  const tpVideo = document.getElementById('thanksPreviewVideo');
+  if (tpVideo && tpVideo.src) {
+    tpVideo.play().catch(()=>{});
+  }
+
+  makeFloatingHearts('thanksHearts', 20);
+  activateOnly('thanks-preview-screen');
+}
+
+function goToLetter() {
+  const noContainer = document.getElementById('noBtnContainer');
+  noContainer.innerHTML = '<button class="btn-no-forgive" id="noBtn" onclick="showLaughingEmoji()">no i didnt forgive you</button>';
+  activateOnly('letter-screen');
+  // Anticipatory preload final video for smooth transition when she clicks yes
+  const fv = document.getElementById('finalVideo');
+  if (fv && fv.getAttribute('src')) { fv.preload = 'auto'; try { fv.load(); } catch(e) {} }
+}
+
+async function forgive() {
+  makeConfettiHearts();
+  activateOnly('final-thanks-screen');
+  const finalVid = document.getElementById('finalVideo');
+  if (finalVid && finalVid.src) finalVid.play().catch(()=>{});
+}
+
+function showLaughingEmoji() {
+  const container = document.getElementById('noBtnContainer');
+  const laughEmojis = ['😂','🤣','😆','😜','🤪','🥳','😏','🙃','😅','😇'];
+  const emoji = laughEmojis[Math.floor(Math.random()*laughEmojis.length)];
+  container.innerHTML = `<span class="laughing-emoji">${emoji}</span>`;
+}
+
+let musicOn = false;
+function toggleMusic() {
+  const music = document.getElementById('bgMusic');
+  const btn = document.getElementById('musicToggle');
+  // Check ACTUAL audio state (not just flag) — more reliable on mobile
+  if (!music.paused) {
+    music.pause();
+    btn.textContent = '♪ MUSIC OFF';
+    musicOn = false;
+  } else {
+    music.muted = false;
+    music.volume = 0.6;
+    const p = music.play();
+    if (p && p.then) {
+      p.then(() => {
+        btn.textContent = '♪ MUSIC ON';
+        musicOn = true;
+      }).catch(err => {
+        btn.textContent = '♪ TAP AGAIN';
+        console.warn('Music play failed:', err.name);
+      });
+    } else {
+      btn.textContent = '♪ MUSIC ON';
+      musicOn = true;
+    }
+  }
+}
+
+window.addEventListener('load', async () => {
+  CONFIG = await loadConfig();
+  await applyConfig();
+});
+</script>
+</body>
+</html>
