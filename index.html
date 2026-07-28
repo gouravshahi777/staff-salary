@@ -646,7 +646,7 @@
     </select>
 
     <div id="passwordSection" class="hidden">
-      <label>Password</label>
+      <label id="loginPassLabel">Password</label>
       <input type="password" id="loginPass" placeholder="Enter password" onkeydown="if(event.key==='Enter') doLogin()" />
       <button class="btn" style="width:100%" onclick="doLogin()">Login</button>
     </div>
@@ -694,8 +694,8 @@
           <input type="text" id="newStaffUser" placeholder="ramesh" />
         </div>
         <div>
-          <label>Password</label>
-          <input type="text" id="newStaffPass" placeholder="password123" />
+          <label>4-Digit PIN</label>
+          <input type="tel" id="newStaffPass" placeholder="1234" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" oninput="this.value=this.value.replace(/\D/g,'').slice(0,4)" />
         </div>
         <div>
           <label>Monthly Salary (₹)</label>
@@ -824,18 +824,25 @@
 <div id="markModal" class="modal-overlay hidden">
   <div class="modal">
     <h3 id="modalDate">Mark Attendance</h3>
-    <p style="font-size:13px; color:#6b7280; margin-bottom:12px;">Status choose karo:</p>
+
+    <!-- STEP 1: On-time tip decision (prominent) -->
+    <div style="background:linear-gradient(135deg, #fef3c7, #fde68a); padding:16px; border-radius:14px; margin-bottom:16px; border:2px solid #f59e0b;">
+      <div style="font-weight:700; color:#92400e; margin-bottom:10px; font-size:14px;">⏰ Aaj on-time tip <span id="modalTipAmount">₹50</span> milega?</div>
+      <div style="display:flex; gap:8px;">
+        <button type="button" id="modalTipYes" class="btn btn-success btn-sm" style="flex:1;" onclick="setModalOnTime(true)">✓ Haan, on-time aaya</button>
+        <button type="button" id="modalTipNo" class="btn btn-outline btn-sm" style="flex:1;" onclick="setModalOnTime(false)">✗ Nahi, late tha</button>
+      </div>
+      <input type="checkbox" id="modalOnTime" style="display:none;" />
+    </div>
+
+    <!-- STEP 2: Attendance status -->
+    <div style="font-weight:700; color:#1e293b; margin-bottom:10px; font-size:14px;">📅 Attendance status choose karo:</div>
     <button class="btn btn-success" style="width:100%; margin-bottom:8px;" onclick="markStatus('present')">✓ Present (Full attendance)</button>
     <button class="btn btn-warning" style="width:100%; margin-bottom:8px;" onclick="markStatus('half-morning')">🌅 Morning Half (50% katega)</button>
     <button class="btn btn-warning" style="width:100%; margin-bottom:8px;" onclick="markStatus('half-evening')">🌇 Evening Half (50% katega)</button>
     <button class="btn btn-danger" style="width:100%; margin-bottom:8px;" onclick="markStatus('full')">✗ Full Day Holiday (100% katega)</button>
-    <div style="background:#f3f4f6; padding:12px 14px; border-radius:10px; margin-top:12px; display:flex; align-items:center; justify-content:space-between;">
-      <label style="margin:0; display:flex; align-items:center; gap:8px; cursor:pointer;">
-        <input type="checkbox" id="modalOnTime" style="width:18px; height:18px; margin:0;" onchange="toggleModalOnTime()"/>
-        <span>⏰ On Time aaya (tip milega)</span>
-      </label>
-    </div>
-    <button class="btn btn-outline" style="width:100%; margin-top:12px;" onclick="markStatus(null)">Clear (Remove all marks)</button>
+    <button class="btn btn-outline" style="width:100%; margin-top:8px;" onclick="markStatus(null)">Clear (Remove all marks)</button>
+
     <div class="modal-actions">
       <button class="btn btn-outline btn-sm" onclick="closeModal()">Cancel</button>
     </div>
@@ -876,8 +883,8 @@
     <input type="text" id="editStaffName" />
     <label>Username</label>
     <input type="text" id="editStaffUser" />
-    <label>Password</label>
-    <input type="text" id="editStaffPass" />
+    <label>4-Digit PIN</label>
+    <input type="tel" id="editStaffPass" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" oninput="this.value=this.value.replace(/\D/g,'').slice(0,4)" placeholder="1234" />
     <label>Monthly Salary (₹)</label>
     <input type="number" id="editStaffSalary" />
     <label>⏰ On-Time Tip (₹ per din)</label>
@@ -1004,7 +1011,29 @@ function onUserSelect() {
   const val = document.getElementById('userSelect').value;
   document.getElementById('passwordSection').classList.toggle('hidden', !val);
   document.getElementById('loginError').classList.add('hidden');
-  if (val) setTimeout(() => document.getElementById('loginPass').focus(), 50);
+  const input = document.getElementById('loginPass');
+  const label = document.getElementById('loginPassLabel');
+  input.value = '';
+  if (val === 'admin') {
+    // Admin: unrestricted password
+    input.type = 'password';
+    input.removeAttribute('maxlength');
+    input.removeAttribute('inputmode');
+    input.removeAttribute('pattern');
+    input.placeholder = 'Enter password';
+    input.oninput = null;
+    if (label) label.textContent = 'Password';
+  } else if (val && val.startsWith('staff:')) {
+    // Staff: 4-digit PIN only
+    input.type = 'tel';
+    input.setAttribute('maxlength', '4');
+    input.setAttribute('inputmode', 'numeric');
+    input.setAttribute('pattern', '[0-9]{4}');
+    input.placeholder = '4-digit PIN';
+    input.oninput = function() { this.value = this.value.replace(/\D/g,'').slice(0,4); };
+    if (label) label.textContent = '4-Digit PIN';
+  }
+  if (val) setTimeout(() => input.focus(), 50);
 }
 function doLogin() {
   const val = document.getElementById('userSelect').value;
@@ -1151,6 +1180,10 @@ function addStaff() {
     alert('Sabhi fields sahi se bharo');
     return;
   }
+  if (!/^\d{4}$/.test(pass)) {
+    alert('Staff PIN sirf 4 digit ka hona chahiye (jaise 1234)');
+    return;
+  }
   if (data.staff.some(s => s.username === user) || user === data.owner.username) {
     alert('Ye username already exist karta hai, doosra choose karo');
     return;
@@ -1202,6 +1235,7 @@ function saveEditStaff() {
   const salary = parseFloat(document.getElementById('editStaffSalary').value);
   const tip = parseFloat(document.getElementById('editStaffTip').value) || 0;
   if (!name || !user || !pass || !salary || salary <= 0) { alert('Sabhi fields bharo'); return; }
+  if (!/^\d{4}$/.test(pass)) { alert('Staff PIN sirf 4 digit ka hona chahiye (jaise 1234)'); return; }
   if (data.staff.some(x => x.username === user && x.id !== s.id) || user === data.owner.username) {
     alert('Username already used hai'); return;
   }
@@ -1388,22 +1422,41 @@ function openMark(dateStr) {
   const nice = new Date(dateStr).toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
   document.getElementById('modalDate').textContent = nice;
   const existing = getAtt(selectedStaffId, dateStr);
-  document.getElementById('modalOnTime').checked = existing ? !!existing.onTime : false;
+  const onTime = existing ? !!existing.onTime : false;
+  // Show correct tip amount for this staff
+  const s = data.staff.find(x => x.id === selectedStaffId);
+  const tip = s ? (s.dailyTip || 0) : 0;
+  document.getElementById('modalTipAmount').textContent = '₹' + tip;
+  // Set visual toggle state
+  updateModalTipButtons(onTime);
+  document.getElementById('modalOnTime').checked = onTime;
   document.getElementById('markModal').classList.remove('hidden');
 }
-function closeModal() {
-  document.getElementById('markModal').classList.add('hidden');
-  selectedDate = null;
+function updateModalTipButtons(onTime) {
+  const yes = document.getElementById('modalTipYes');
+  const no = document.getElementById('modalTipNo');
+  if (onTime) {
+    yes.className = 'btn btn-success btn-sm';
+    no.className = 'btn btn-outline btn-sm';
+  } else {
+    yes.className = 'btn btn-outline btn-sm';
+    no.className = 'btn btn-danger btn-sm';
+  }
 }
-function toggleModalOnTime() {
-  // if user only toggled on-time without picking a status, save it (status stays as-is)
+function setModalOnTime(onTime) {
   if (!selectedDate || !selectedStaffId) return;
-  const onTime = document.getElementById('modalOnTime').checked;
+  document.getElementById('modalOnTime').checked = onTime;
+  updateModalTipButtons(onTime);
+  // Save immediately so admin can see reflected in stats
   const existing = getAtt(selectedStaffId, selectedDate) || { status: null, onTime: false };
   existing.onTime = onTime;
   setAtt(selectedStaffId, selectedDate, existing);
   saveData();
   if (currentUser === 'owner') renderAttendanceView();
+}
+function closeModal() {
+  document.getElementById('markModal').classList.add('hidden');
+  selectedDate = null;
 }
 function markStatus(status) {
   if (!selectedDate || !selectedStaffId) return;
